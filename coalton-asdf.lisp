@@ -21,6 +21,18 @@
 (defclass coalton-file (cl-source-file)
   ((type :initform "coal")))
 
+(defmethod perform ((o compile-op) (c ct-file))
+  "Compile a .ct file with the Coalton readtable active.
+This ensures coalton-toplevel forms are handled directly by the reader
+rather than through macro expansion, producing accurate source locations."
+  (let* ((input-file (first (input-files o c)))
+         (output-file (first (output-files o c)))
+         (*readtable* (named-readtables:ensure-readtable 'coalton:coalton)))
+    (call-with-around-compile-hook
+     c (lambda (&rest flags)
+         (declare (ignore flags))
+         (compile-file input-file :output-file output-file)))))
+
 (defmethod perform ((o compile-op) (c coalton-file))
   (let ((coal-file (first (input-files o c)))
         (fasl-file (first (output-files o c))))
